@@ -16,6 +16,8 @@
 #include <vector>
 #include <map>
 
+#include <iostream>
+
 using namespace Pistache;
 using json = nlohmann::json;
 
@@ -40,6 +42,9 @@ void ApiEndpoint::setup_routes() {
     Routes::Get(router, "/get_status/:ip", Routes::bind(&ApiEndpoint::get_status, this));
     Routes::Post(router, "/action/:ip", Routes::bind(&ApiEndpoint::action, this));
     Routes::Post(router, "/quit", Routes::bind(&ApiEndpoint::quit, this));
+
+    Routes::Get(router, "/get_info", Routes::bind(&ApiEndpoint::get_info, this));
+    Routes::Post(router, "/set_info", Routes::bind(&ApiEndpoint::set_info, this));
 }
 
 ApiEndpoint::ApiEndpoint(Address addr, const Controller &controller)
@@ -58,10 +63,13 @@ void ApiEndpoint::start() {
 
 // routes
 void ApiEndpoint::ping(const Rest::Request& request, Http::ResponseWriter response) {
+    response.headers().add<Http::Header::AccessControlAllowOrigin>("*");
     response.send(Http::Code::Ok, "OK");
 }
 
 void ApiEndpoint::quit(const Rest::Request& request, Http::ResponseWriter response) {
+    response.headers().add<Http::Header::AccessControlAllowOrigin>("*");
+
     controller.recover_all_hosts(); // being nice by recovering the network for targets before exiting
     Socket::close_sockets();
     Thread::stop_all_threads();
@@ -73,6 +81,9 @@ void ApiEndpoint::quit(const Rest::Request& request, Http::ResponseWriter respon
 }
 
 void ApiEndpoint::get_targets(const Rest::Request& request, Http::ResponseWriter response) {
+    response.headers().add<Http::Header::AccessControlAllowOrigin>("*");
+    response.headers().add<Http::Header::ContentType>(MIME(Application, Json));
+
     controller.scan_targets();
     std::vector<Host> hosts = controller.get_targets();
 
@@ -87,12 +98,13 @@ void ApiEndpoint::get_targets(const Rest::Request& request, Http::ResponseWriter
     }
 
     json j_vec(v);
-
-    response.headers().add<Http::Header::ContentType>(MIME(Application, Json));
     response.send(Http::Code::Ok, j_vec.dump());
 }
 
 void ApiEndpoint::action(const Rest::Request& request, Http::ResponseWriter response) {
+    response.headers().add<Http::Header::AccessControlAllowOrigin>("*");
+    response.headers().add<Http::Header::ContentType>(MIME(Application, Json));
+
     std::string target_ip = request.param(":ip").as<std::string>();
 
     ACTION_STATUS status = controller.action(target_ip);
@@ -115,15 +127,16 @@ void ApiEndpoint::action(const Rest::Request& request, Http::ResponseWriter resp
     }
 
     json j_map(res);
-
-    response.headers().add<Http::Header::ContentType>(MIME(Application, Json));
     response.send(http_return_code, j_map.dump());
 }
 
 void ApiEndpoint::get_status(const Rest::Request& request, Http::ResponseWriter response) {
-    std::string target_ip = request.param(":ip").as<std::string>();
+    response.headers().add<Http::Header::AccessControlAllowOrigin>("*");
+    response.headers().add<Http::Header::ContentType>(MIME(Application, Json));
 
     controller.scan_targets();
+
+    std::string target_ip = request.param(":ip").as<std::string>();
     Host host = controller.get_host(target_ip);
     std::map<std::string, std::string> res;
     auto http_return_code = Http::Code::Ok; // default
@@ -144,7 +157,34 @@ void ApiEndpoint::get_status(const Rest::Request& request, Http::ResponseWriter 
     }
 
     json j_map(res);
+    response.send(http_return_code, j_map.dump());
+}
 
+void ApiEndpoint::get_info(const Rest::Request& request, Http::ResponseWriter response) {
+    response.headers().add<Http::Header::AccessControlAllowOrigin>("*");
     response.headers().add<Http::Header::ContentType>(MIME(Application, Json));
+
+
+    std::map<std::string, std::string> res;
+    auto http_return_code = Http::Code::Ok; // default
+    res["atk"] = std::to_string(controller.get_atk_value());
+    res["def"] = std::to_string(controller.get_def_value());
+
+    json j_map(res);
+    response.send(http_return_code, j_map.dump());
+}
+
+void ApiEndpoint::set_info(const Rest::Request& request, Http::ResponseWriter response) {
+    response.headers().add<Http::Header::AccessControlAllowOrigin>("*");
+    response.headers().add<Http::Header::ContentType>(MIME(Application, Json));
+
+    std::map<std::string, std::string> res;
+    auto http_return_code = Http::Code::Ok; // default
+    
+    json j_map = json::parse(request.body());
+    controller.set_atk_value(std::stoi(std::string(j_map["atk"])));
+    controller.set_def_value(std::stoi(std::string(j_map["def"])));
+
+    // response.send(http_return_code, request.body());
     response.send(http_return_code, j_map.dump());
 }

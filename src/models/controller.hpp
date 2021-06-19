@@ -20,6 +20,8 @@ class Controller {
     std::set<Host> hosts;
     std::map<Host, ARP> arp;
     std::map<Host, std::string> fake_mac_address;
+    int atk_value;
+    int def_value;
     const uint32_t attack_interval_ms;
     const uint32_t scan_interval_ms;
     Clock::time_point last_scan_time;
@@ -34,6 +36,10 @@ class Controller {
     Host get_host(const std::string &target_ip) const;
     void recover_all_hosts();
     ACTION_STATUS action(const std::string &target_ip);
+    int get_atk_value();
+    int get_def_value();
+    void set_atk_value(int atk_value);
+    void set_def_value(int def_value);
 };
 
 #endif

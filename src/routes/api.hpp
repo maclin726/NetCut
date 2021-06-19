@@ -29,6 +29,8 @@ class ApiEndpoint {
     void get_targets(const Rest::Request& request, Http::ResponseWriter response);
     void action(const Rest::Request& request, Http::ResponseWriter response);
     void get_status(const Rest::Request& request, Http::ResponseWriter response);
+    void get_info(const Rest::Request& request, Http::ResponseWriter response);
+    void set_info(const Rest::Request& request, Http::ResponseWriter response);
 };
 
 void start_server(uint16_t listening_port, const Controller &controller);

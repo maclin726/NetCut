@@ -13,7 +13,7 @@
 typedef std::chrono::high_resolution_clock Clock;
 
 Controller::Controller(const uint32_t attack_interval_ms, const uint32_t scan_interval_ms) 
-            : attack_interval_ms(attack_interval_ms), scan_interval_ms(scan_interval_ms) {}
+            : attack_interval_ms(attack_interval_ms), scan_interval_ms(scan_interval_ms), atk_value(1), def_value(0) {}
 
 void Controller::scan_targets() {
     auto current_time = Clock::now();
@@ -99,4 +99,20 @@ void Controller::recover_all_hosts() {
 
 std::string Controller::get_fake_mac_address() const {
     return Mac::get_random_mac_address();
+}
+
+int Controller::get_atk_value() {
+    return atk_value;
+}
+
+int Controller::get_def_value() {
+    return def_value;
+}
+
+void Controller::set_atk_value(int atk_value) {
+    this->atk_value = atk_value;
+}
+
+void Controller::set_def_value(int def_value) {
+    this->def_value = def_value;
 }
